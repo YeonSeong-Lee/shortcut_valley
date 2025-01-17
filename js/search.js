@@ -1,4 +1,7 @@
 let searchTimeout = null;
+let currentPage = 1;
+let isLoading = false;
+let lastSearchTerm = '';
 
 function debounceSearch(searchTerm) {
     if (searchTimeout) {
@@ -7,37 +10,74 @@ function debounceSearch(searchTerm) {
     
     searchTimeout = setTimeout(() => {
         if (searchTerm.trim()) {
-            performSearch(searchTerm);
+            if (lastSearchTerm !== searchTerm) {
+                currentPage = 1;
+                document.getElementById('searchResults').innerHTML = '';
+            }
+            lastSearchTerm = searchTerm;
+            performSearch(searchTerm, currentPage);
         } else {
             document.getElementById('searchResults').innerHTML = '';
         }
-    }, 300); // 300ms 디바운스
+    }, 300);
 }
 
-async function performSearch(searchTerm) {
+async function performSearch(searchTerm, page) {
+    if (isLoading) return;
+    
     try {
+        isLoading = true;
         const response = await chrome.runtime.sendMessage({
             type: 'performSearch',
             searchTerm: searchTerm,
             sort: 'score',
             period: 'all',
-            page: 1,
+            page: page,
             size: 10
         });
 
-        if (!response.success) {
-            throw new Error(response.error);
+        if (!response || !response?.success) {
+            throw new Error(response?.error || '검색에 실패했습니다.');
         }
 
+        if (page === 1) {
             document.getElementById('searchResults').innerHTML = '';
-        displayResults(response.data);
-        currentSearchTerm = searchTerm;
+        }
+
+        displayResults(response?.data);
+
+        const loadMoreButton = document.getElementById('loadMoreButton');
+        if (loadMoreButton) {
+            loadMoreButton.remove();
+        }
+
+        if (response?.data?.hasNextPage) {
+            addLoadMoreButton();
+        }
+
     } catch (error) {
         console.error('검색 중 오류가 발생했습니다:', error);
-            document.getElementById('searchResults').innerHTML = 
-                '<div class="error-message">검색 중 오류가 발생했습니다.</div>';
-        }
+        document.getElementById('searchResults').innerHTML = 
+            '<div class="error-message">검색 중 오류가 발생했습니다.</div>';
+    } finally {
+        isLoading = false;
     }
+}
+
+function addLoadMoreButton() {
+    const resultsDiv = document.getElementById('searchResults');
+    const loadMoreButton = document.createElement('button');
+    loadMoreButton.id = 'loadMoreButton';
+    loadMoreButton.className = 'load-more-button';
+    loadMoreButton.textContent = '더보기';
+    loadMoreButton.onclick = () => {
+        loadMoreButton.classList.add('loading');
+        loadMoreButton.textContent = '불러오는 중...';
+        currentPage++;
+        performSearch(lastSearchTerm, currentPage);
+    };
+    resultsDiv.appendChild(loadMoreButton);
+}
 
 function displayResults(results) {
     const resultsDiv = document.getElementById('searchResults');
