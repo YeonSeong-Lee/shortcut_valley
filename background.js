@@ -29,7 +29,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           success: true, 
           data: data,
           from: 'blog-posts',
-          hasNextPage: response.data.hasNextPage
+          hasNextPage: data.hasNextPage
         });
       })
       .catch(error => {
