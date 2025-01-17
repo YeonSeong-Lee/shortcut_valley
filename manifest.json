@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Valley Town 검색",
+  "version": "1.0",
+  "description": "Valley Town 블로그 포스트 검색 확장 프로그램",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://api.valley.town/*",
+    "https://www.valley.town/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "search.html"
+  }
+} 
