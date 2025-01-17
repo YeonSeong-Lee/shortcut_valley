@@ -13,7 +13,7 @@
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'performSearch') {
-    const { searchTerm, sort = 'score', period = 'all', page = 1, size = 5 } = request;
+    const { searchTerm, sort = 'score', period = 'all', page = 1, size = 10 } = request;
     
     const url = new URL('https://api.valley.town/blog-posts');
     url.searchParams.set('query', searchTerm);
@@ -29,9 +29,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           success: true, 
           data: data,
           from: 'blog-posts',
-          totalCount: data.totalCount,
-          page: data.page,
-          size: data.size
+          hasNextPage: response.data.hasNextPage
         });
       })
       .catch(error => {
@@ -39,9 +37,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           success: false, 
           error: error.message,
           from: 'blog-posts',
-          totalCount: 0,
-          page: 0,
-          size: 0
+          hasNextPage: false
         });
       });
     return true;

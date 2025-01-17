@@ -1,25 +1,43 @@
-let currentSearchTerm = '';
+let searchTimeout = null;
+
+function debounceSearch(searchTerm) {
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
+    
+    searchTimeout = setTimeout(() => {
+        if (searchTerm.trim()) {
+            performSearch(searchTerm);
+        } else {
+            document.getElementById('searchResults').innerHTML = '';
+        }
+    }, 300); // 300ms 디바운스
+}
 
 async function performSearch(searchTerm) {
     try {
         const response = await chrome.runtime.sendMessage({
             type: 'performSearch',
-            searchTerm: searchTerm
+            searchTerm: searchTerm,
+            sort: 'score',
+            period: 'all',
+            page: 1,
+            size: 10
         });
 
         if (!response.success) {
             throw new Error(response.error);
         }
 
-        document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('searchResults').innerHTML = '';
         displayResults(response.data);
         currentSearchTerm = searchTerm;
     } catch (error) {
         console.error('검색 중 오류가 발생했습니다:', error);
-        document.getElementById('searchResults').innerHTML = 
-            '<div class="error-message">검색 중 오류가 발생했습니다.</div>';
+            document.getElementById('searchResults').innerHTML = 
+                '<div class="error-message">검색 중 오류가 발생했습니다.</div>';
+        }
     }
-}
 
 function displayResults(results) {
     const resultsDiv = document.getElementById('searchResults');
@@ -27,7 +45,7 @@ function displayResults(results) {
     const items = results.items || [];
     
     if (!items || items.length === 0) {
-        resultsDiv.innerHTML = '<div class="no-results">검색 결과가 없습니다.</div>';
+            resultsDiv.innerHTML = '<div class="no-results">검색 결과가 없습니다.</div>';
         return;
     }
 
@@ -72,21 +90,11 @@ function displayResults(results) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const searchButton = document.getElementById('searchButton');
     const searchInput = document.getElementById('searchInput');
     
-    if (searchButton && searchInput) {
-        searchButton.addEventListener('click', function() {
-            const searchTerm = searchInput.value;
-            if (searchTerm) {
-                performSearch(searchTerm);
-            }
-        });
-
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchButton.click();
-            }
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            debounceSearch(this.value);
         });
     }
 }); 
